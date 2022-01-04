@@ -133,10 +133,71 @@ companies_all_years_returns <- companies_all_years %>%
 
 # Add cumulative holdings column for ESG
 ESG_cumu_holdings <- add_companies_grouped %>%
-  select(-c(investors, ESG))
+  select(-c(investors, ESG))  %>%
+  rename(year = invest_year)
+
+ESG_cumu_holdings$date_form <- 
+  as.Date(ISOdate(ESG_cumu_holdings$year, 12, 31))
+
+ESG_cumu_holdings <- ESG_cumu_holdings %>% 
+  pad(group = "symbol")
+
+ESG_cumu_holdings$comb_holding_percent[is.na(ESG_cumu_holdings$comb_holding_percent)] = 0
 
 ESG_cumu_holdings$cum_holding_sum <- ave(ESG_cumu_holdings$comb_holding_percent, 
                               ESG_cumu_holdings$symbol, FUN=cumsum)
 
+ESG_cumu_holdings <- ESG_cumu_holdings %>%
+  select(-c(comb_holding_percent, year))
 
+# Join cumulative ESG holdings column to companies_all_years_returns
+companies_all_years_returns_hold <- companies_all_years_returns %>%
+  left_join(ESG_cumu_holdings, by = c('symbol','date_form'))
+
+# Add cumulative holdings column for E, S, and G separate
+sep_cumu_holdings <- main_companies_grouped %>%
+  pivot_wider(names_from = "demand_group", 
+              values_from = "comb_holding_percent",
+              names_repair = "check_unique")
+
+sep_cumu_holdings$Governance[is.na(sep_cumu_holdings$Governance)] = 0
+sep_cumu_holdings$Social[is.na(sep_cumu_holdings$Social)] = 0
+sep_cumu_holdings$Environmental[is.na(sep_cumu_holdings$Environmental)] = 0  
+
+sep_cumu_holdings <- sep_cumu_holdings %>%
+  group_by(symbol, invest_year) %>%
+  summarize(Governance = max(Governance), Social = max(Social), 
+            Environmental = max(Environmental)) %>%
+  rename(year = invest_year)
+
+sep_cumu_holdings$date_form <- 
+  as.Date(ISOdate(sep_cumu_holdings$year, 12, 31))
+
+sep_cumu_holdings <- sep_cumu_holdings %>% 
+  pad(group = "symbol")
+
+sep_cumu_holdings$Governance[is.na(sep_cumu_holdings$Governance)] = 0
+sep_cumu_holdings$Social[is.na(sep_cumu_holdings$Social)] = 0
+sep_cumu_holdings$Environmental[is.na(sep_cumu_holdings$Environmental)] = 0
+
+sep_cumu_holdings$cum_G_holding_sum <- ave(sep_cumu_holdings$Governance, 
+                                           sep_cumu_holdings$symbol, FUN=cumsum)
+sep_cumu_holdings$cum_S_holding_sum <- ave(sep_cumu_holdings$Social, 
+                                           sep_cumu_holdings$symbol, FUN=cumsum)
+sep_cumu_holdings$cum_E_holding_sum <- ave(sep_cumu_holdings$Environmental, 
+                                           sep_cumu_holdings$symbol, FUN=cumsum)
+
+sep_cumu_holdings <- sep_cumu_holdings %>%
+  ungroup() %>%
+  select(-c(Environmental, Social, Governance, year))
+
+# Join E, S, and G holdings columns to companies_all_years_returns_hold
+companies_all_years_returns_hold <- companies_all_years_returns_hold %>%
+  left_join(sep_cumu_holdings, by = c('symbol','date_form'))
+  
+master_companies_returns_hold <- 
+  companies_all_years_returns_hold[!is.na(companies_all_years_returns_hold$symbol), ]
+
+# Write master_companies_returns_hold to csv to have cumulative holdings and stock returns
+write_csv(master_companies_returns_hold, file = 'data/master_companies_returns_cumhold.csv')
 
