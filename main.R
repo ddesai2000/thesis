@@ -1,6 +1,7 @@
 library(tidyverse)
 library(dplyr)
 library(janitor)
+library(padr)
 
 companies <- read_csv(file = 'data/ESG_US_Demands.csv')
 
@@ -109,4 +110,18 @@ master_ESG_companies <- master_ESG_companies %>%
 # Write master file to csv
 write_csv(master_ESG_companies, file = 'data/master_ESG_companies.csv')
 
+# Get years of each firm need data for
+companies_all_years <- add_companies_grouped %>% 
+  group_by(symbol) %>% 
+  complete(invest_year = full_seq((min(invest_year)-3):(max(invest_year) + 4), 1)) %>%
+  rename(year = invest_year) %>%
+  select(symbol, year)
+  add_column(date_form = NA)
+
+companies_all_years$date_form <- 
+  as.Date(ISOdate(companies_all_years$year, 12, 31))
+
+# Remove years greater than 2021
+
 # Add returns data in + Cumulative Holdings
+
