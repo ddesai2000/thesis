@@ -201,3 +201,10 @@ master_companies_returns_hold <-
 # Write master_companies_returns_hold to csv to have cumulative holdings and stock returns
 write_csv(master_companies_returns_hold, file = 'data/master_companies_returns_cumhold.csv')
 
+# Join master ESG file with master company returns + holding file
+main_companies_data <- master_companies_returns_hold  %>%
+  left_join(master_ESG_companies, by = "symbol")
+
+# Write full data file to csv
+write_csv(main_companies_data, file = 'data/main_companies.csv')
+
