@@ -131,6 +131,12 @@ companies_all_years_returns <- companies_all_years %>%
   left_join(master_annual_returns, by = c('symbol','year')) %>%
   select(-date)
 
-# Add cumulative holdings column
+# Add cumulative holdings column for ESG
+ESG_cumu_holdings <- add_companies_grouped %>%
+  select(-c(investors, ESG))
+
+ESG_cumu_holdings$cum_holding_sum <- ave(ESG_cumu_holdings$comb_holding_percent, 
+                              ESG_cumu_holdings$symbol, FUN=cumsum)
+
 
 
