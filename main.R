@@ -115,13 +115,22 @@ companies_all_years <- add_companies_grouped %>%
   group_by(symbol) %>% 
   complete(invest_year = full_seq((min(invest_year)-3):(max(invest_year) + 4), 1)) %>%
   rename(year = invest_year) %>%
-  select(symbol, year)
+  select(symbol, year) %>%
   add_column(date_form = NA)
 
 companies_all_years$date_form <- 
   as.Date(ISOdate(companies_all_years$year, 12, 31))
 
 # Remove years greater than 2021
+companies_all_years <- subset(companies_all_years, year < 2022)
 
-# Add returns data in + Cumulative Holdings
+# Add returns data in
+master_annual_returns <- read_csv(file = 'data/master_annual_returns.csv')
+
+companies_all_years_returns <- companies_all_years %>%
+  left_join(master_annual_returns, by = c('symbol','year')) %>%
+  select(-date)
+
+# Add cumulative holdings column
+
 
